@@ -1,1 +1,2 @@
-# reggae_v2
+# cps_regs
+Register Inferface for CPS Experiments on FPGA

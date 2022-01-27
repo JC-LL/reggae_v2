@@ -1,0 +1,5 @@
+require "colorize"
+require_relative "reggae/runner"
+require_relative "reggae/compiler"
+require_relative "reggae/version"
+require_relative "reggae/ast"
