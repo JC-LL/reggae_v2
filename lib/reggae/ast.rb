@@ -32,6 +32,7 @@ module Reggae
 
   class Reg < AstNode
     attr_accessor :name
+    attr_accessor :size
     attr_accessor :addr
     attr_accessor :init
     attr_accessor :bits
@@ -39,13 +40,16 @@ module Reggae
   end
 
   class Bit < AstNode
+    attr_accessor :id
     attr_accessor :name
     attr_accessor :toggling
+    attr_accessor :sampling
   end
 
   class Bitfield < AstNode
     attr_accessor :range
     attr_accessor :name
+    attr_accessor :sampling
   end
 
   class AddrRange < AstNode

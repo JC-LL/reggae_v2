@@ -6,7 +6,7 @@ module Reggae
     def parse filename
       puts "=> parsing '#{filename}'".green
       sxp=SXP.read IO.read(filename)
-      pp ast=objectify(sxp)
+      ast=objectify(sxp)
     end
 
     def objectify sxp
@@ -14,7 +14,7 @@ module Reggae
     end
 
     def say txt
-      puts txt.to_s.light_green
+      #puts txt.to_s.light_green
     end
 
     # (header value) => return value
@@ -45,8 +45,8 @@ module Reggae
       if (header=header(sxp))==:bus
         header   = sxp.shift
         bus.name = sxp.shift
-        bus.addr_size=parse_single(sxp.shift)
-        bus.data_size=parse_single(sxp.shift)
+        bus.addr_size=parse_single(sxp.shift).to_i
+        bus.data_size=parse_single(sxp.shift).to_i
       else
         puts "syntax error : expecting 'bus' as s-expression header. got #{header}"
       end
@@ -97,10 +97,14 @@ module Reggae
       reg.bitfields=[]
       header   = sxp.shift
       reg.name = sxp.shift
-      reg.addr = parse_single(sxp.shift)
-      reg.init = parse_single(sxp.shift)
       while sxp.any?
         case header=header(sxp.first)
+        when :size
+          reg.size = parse_single(sxp.shift)
+        when :address
+          reg.addr = parse_single(sxp.shift)
+        when :init
+          reg.init = parse_single(sxp.shift)
         when :bit
           reg.bits << parse_bit(sxp.shift)
         when :bitfield
@@ -109,15 +113,24 @@ module Reggae
           puts "syntax error : expecting 'bit' or 'bitfield' as s-expression header. got #{header}"
         end
       end
+      reg.size||=32
+      reg.size=reg.size.to_i
       reg
     end
 
     def parse_bit sxp
       say "parse_bit #{sxp}"
+      pp sxp
       bit=Bit.new
       header   = sxp.shift
       bit.id   = sxp.shift
       bit.name = parse_single(sxp.shift)
+      if sxp.any?
+        case header=header(sxp.first)
+        when :toggling
+          bit.toggling=true
+        end
+      end
       bit
     end
 
@@ -127,16 +140,14 @@ module Reggae
       header           = sxp.shift
       bitfield.range   = sxp.shift
       bitfield.name    = parse_single(sxp.shift)
+      if sxp.any?
+        case header=header(sxp.first)
+        when :sampling
+          bit.samling=parse_single(sxp.shift)
+        end
+      end
       bitfield
     end
-
-    def parse_bit sxp
-      say "parse_bit #{sxp}"
-      p header   = sxp.shift
-      p bit_id   = sxp.shift
-      p bit_name = parse_single(sxp.shift)
-    end
-
 
     def header sxp
       sxp.first
