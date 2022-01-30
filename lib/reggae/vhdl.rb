@@ -8,6 +8,14 @@ module Reggae
         @e=h
       end
 
+      def name
+        @e[:name]
+      end
+
+      def ports
+        @e[:ports]
+      end
+
       def code
         code=Code.new
         code << "entity #{@e[:name]} is"
@@ -18,7 +26,7 @@ module Reggae
           @e[:generic].each do |name,type_init|
             type,init=type_init
             init=" := #{init}" if init
-            code << "#{name} : #{type}#{init},"
+            code << "#{name} : #{type}#{init};"
           end
           code.indent=2
           code << ");"

@@ -6,6 +6,7 @@ class Code
     @lines=[]
     (@lines << str) if str
     @indent=0
+    @indent_stack=[]
   end
 
   def <<(thing)
@@ -21,6 +22,15 @@ class Code
     else
       @lines << " "*@indent+thing.to_s
     end
+  end
+
+  def indent_on suppl=2
+    @indent_stack.push nb_leading_spaces=@lines.last[/\A */].length
+    @indent=nb_leading_spaces+suppl
+  end
+
+  def indent_off
+    @indent=@indent_stack.pop
   end
 
   def finalize

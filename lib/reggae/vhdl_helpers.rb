@@ -16,7 +16,7 @@ module Reggae
         code=Code.new
         code << "library ieee;"
         code << "use ieee.std_logic_1164.all;"
-        code << "use ieee.numeric_std.all"
+        code << "use ieee.numeric_std.all;"
         code.newline
         code
       end
@@ -108,8 +108,9 @@ module Reggae
 
       def sanitize code
         txt=code.finalize
-        txt.gsub!(/,\s*\)/,')')
-        txt.gsub!(/;\s*\)/,')')
+        txt.gsub!(/,(\s*)\)/,'\1)')
+        txt.gsub!(/;(\s*)\)/,'\1)')
+        txt
       end
 
     end

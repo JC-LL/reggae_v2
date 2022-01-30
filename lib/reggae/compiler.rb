@@ -1,6 +1,3 @@
-require_relative 'parser'
-require_relative 'vhdl_gen'
-
 module Reggae
 
   class Compiler

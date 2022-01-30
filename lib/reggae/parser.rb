@@ -4,7 +4,7 @@ module Reggae
   class Parser
 
     def parse filename
-      puts "=> parsing '#{filename}'".green
+      puts "=> parsing '#{filename}'"
       sxp=SXP.read IO.read(filename)
       ast=objectify(sxp)
     end
@@ -98,19 +98,32 @@ module Reggae
       header   = sxp.shift
       reg.name = sxp.shift
       while sxp.any?
-        case header=header(sxp.first)
+        kind=header(sxp.first)
+        case kind
         when :size
           reg.size = parse_single(sxp.shift)
         when :address
           reg.addr = parse_single(sxp.shift)
+        when :sampling
+          reg.sampling = parse_single(sxp.shift)
         when :init
-          reg.init = parse_single(sxp.shift)
+          value = parse_single(sxp.shift)
+          case value
+          when /0x([0-9a-fA-F]+)/
+            reg.init=$1.to_i(16)
+          when /0b([0-1]+)/
+            reg.init=$1.to_i(2)
+          when /([0-9]+)/
+            reg.init=$1.to_i
+          else
+            raise "Syntax ERROR for reg init value : prefer '0x....' instead of '#{value}'"
+          end
         when :bit
           reg.bits << parse_bit(sxp.shift)
         when :bitfield
           reg.bitfields << parse_bitfield(sxp.shift)
         else
-          puts "syntax error : expecting 'bit' or 'bitfield' as s-expression header. got #{header}"
+          puts "syntax error : expecting 'bit' or 'bitfield' as s-expression header. got #{kind}"
         end
       end
       reg.size||=32
@@ -120,7 +133,6 @@ module Reggae
 
     def parse_bit sxp
       say "parse_bit #{sxp}"
-      pp sxp
       bit=Bit.new
       header   = sxp.shift
       bit.id   = sxp.shift
@@ -129,6 +141,8 @@ module Reggae
         case header=header(sxp.first)
         when :toggling
           bit.toggling=true
+        when :sampling
+          bit.sampling=parse_single(sxp.shift)
         end
       end
       bit
@@ -138,15 +152,25 @@ module Reggae
       say "parse_bitfield #{sxp}"
       bitfield=Bitfield.new
       header           = sxp.shift
-      bitfield.range   = sxp.shift
+      bitfield.range   = parse_bitfield_range(sxp.shift)
       bitfield.name    = parse_single(sxp.shift)
       if sxp.any?
         case header=header(sxp.first)
         when :sampling
-          bit.samling=parse_single(sxp.shift)
+          bitfield.sampling=parse_single(sxp.shift)
         end
       end
+      bitfield.size=(bitfield.range.end-bitfield.range.start).abs + 1
       bitfield
+    end
+
+    def parse_bitfield_range sxp
+      mdata   = sxp.match(/(\d+)..(\d+)/)
+      min,max = mdata.captures.map(&:to_i).minmax
+      range=BitFieldRange.new
+      range.start = min
+      range.end   = max
+      range
     end
 
     def header sxp
