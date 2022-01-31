@@ -25,7 +25,6 @@ module Reggae
       @reggae_dir=__dir__
       @dest_dir=Dir.pwd+"/GENERATED_#{model.name.to_s.upcase}"
       FileUtils.mkdir_p hdl_dir   =@dest_dir
-      FileUtils.mkdir_p assets_dir=@dest_dir+"/assets"
       @lib_files={
         :clock_lib => [], # for some uart tb reason, clock is defined is this separate package.
         :uart_lib  => [],
@@ -56,16 +55,22 @@ module Reggae
 
     def generate_ips
       puts "=> generating IPs"
-      FileUtils.mkdir_p @dest_dir+"/hdl"
+      FileUtils.mkdir_p @dest_dir+"/rtl"
       model.ips.each{|ip| generate_ip(ip)}
     end
 
     def generate_ip ip
       puts "=> generating IP '#{ip.name}'"
-      code_entity=IPGen.new.generate(ip)
-      filename=@dest_dir+"/hdl/IP_#{ip.name}.vhd"
-      save_as code_entity,filename
-      @lib_files[:ip_lib] << filename
+      if ip.is_bram
+        @lib_files[:ip_lib] << "#{@reggae_dir}/../../assets/bram/bram.vhd"
+        @lib_files[:ip_lib] << "#{@reggae_dir}/../../assets/bram/ip_bram.vhd"
+        @lib_files[:ip_lib].uniq!
+      else
+        filename=@dest_dir+"/rtl/IP_#{ip.name}.vhd"
+        @lib_files[:ip_lib] << filename
+        code_entity=IPGen.new.generate(ip)
+        save_as code_entity,filename
+      end
     end
 
     def generate_soc
@@ -73,20 +78,20 @@ module Reggae
       soc_gen=SOCGen.new
       #-- soc pkg (memory map)
       code=soc_gen.generate_soc_pkg(model)
-      filename=@dest_dir+"/hdl/SOC_#{model.name}_pkg.vhd"
+      filename=@dest_dir+"/rtl/SOC_#{model.name}_pkg.vhd"
       save_as code,filename
       @lib_files[:soc_lib] << filename
       #-- soc top level
       code=soc_gen.generate(model)
       @top=soc_gen.entity #used by TbGen
-      filename=@dest_dir+"/hdl/SOC_#{model.name}.vhd"
+      filename=@dest_dir+"/rtl/SOC_#{model.name}.vhd"
       save_as code,filename
       @lib_files[:soc_lib] << filename
     end
 
     def generate_sim
       puts "=> generating simulation files"
-      FileUtils.mkdir_p sim_dir=@dest_dir+"/sim"
+      FileUtils.mkdir_p sim_dir=@dest_dir+"/tb"
       code = TbGen.new.generate(@top)
       filename=sim_dir+"/SOC_#{model.name}_tb.vhd"
       save_as code,filename

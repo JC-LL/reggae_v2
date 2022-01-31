@@ -62,15 +62,22 @@ module Reggae
             sassign("bus_to_master_data" , or_(model.ips.map{|ip| "slave_to_bus_data_IP_#{ip.name.upcase}"})),
 
             model.ips.map.with_index do |ip,idx|
+              genmap={
+                "ADDRESS_START  " => "MEMORY_MAP(IP_#{ip.name.upcase}).address_start",
+                "ADDRESS_END    " => "MEMORY_MAP(IP_#{ip.name.upcase}).address_end",
+              }
+              if ip.is_bram
+                genmap.merge(
+                  "BRAM_ADDR_SIZE " => "8",
+                  "BRAM_DATA_SIZE " => "8",
+                )
+              end
               [
                 comment("-"*60),
                 comment("IP_#{ip.name} instanciation"),
                 comment("-"*60),
-                instance(label="IP_#{ip.name}_#{idx}",lib="ip_lib",entity="ip_#{ip.name}","rtl",
-                  genmap={
-                    "address_start" => "MEMORY_MAP(IP_#{ip.name.upcase}).address_start",
-                    "address_end"   => "MEMORY_MAP(IP_#{ip.name.upcase}).address_start"
-                  },
+                instance(label="IP_#{ip.name}_#{idx}",lib="ip_lib",entity="ip_#{ip.is_bram ? "bram" : ip.name}","rtl",
+                  genmap,
                   portmap={
                     "reset_n            " => "reset_n",
                     "clk                " => "clk100",
