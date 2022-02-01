@@ -137,14 +137,64 @@ module Reggae
 
         f.puts "echo \"=> viewing #{model.name}_tb\""
         f.puts "gtkwave soc_#{model.name}_tb.ghw soc_#{model.name}_tb.sav"
-
-
       end
     end
 
     def generate_syn
       puts "=> generating synthesis files"
-      FileUtils.mkdir_p @dest_dir+"/syn"
+
+      code=Code.new
+      code << "set partname \"xc7a100tcsg324-1\""
+      code << "set xdc_constraints \"./nexysa7.xdc\""
+      code << "set outputDir ./SYNTH_OUTPUTS"
+      code << "file mkdir $outputDir"
+      @lib_files[:clock_lib].each do |vhdl|
+        name=File.basename(vhdl)
+        code << "read_vhdl -library clock_lib #{vhdl}"
+      end
+      @lib_files[:uart_lib].each do |vhdl|
+        # Exclude uart_cst_SIM.vhd
+        exclude=["uart_cst_SIM.vhd","uart_api.vhd"]
+        unless exclude.include? vhdl.split('/').last
+          name=File.basename(vhdl)
+          code << "read_vhdl -library uart_lib #{vhdl}"
+        end
+      end
+      @lib_files[:ip_lib].each do |vhdl|
+        name=File.basename(vhdl)
+        code << "read_vhdl -library ip_lib #{vhdl}"
+      end
+      @lib_files[:soc_lib].each do |vhdl|
+        name=File.basename(vhdl)
+        unless name.end_with? ("_tb.vhd")
+          code <<  "read_vhdl -library soc_lib #{vhdl}"
+        end
+      end
+      code << "read_xdc $xdc_constraints"
+      code << "synth_design -top soc_#{model.name} -part $partname"
+      code << "write_checkpoint -force $outputDir/post_synth.dcp"
+      code << "report_timing_summary -file $outputDir/post_synth_timing_summary.rpt"
+      code << "report_utilization -file $outputDir/post_synth_util.rpt"
+      code << ""
+      code << "opt_design"
+      code << "place_design"
+      code << ""
+      code << "write_checkpoint -force $outputDir/post_place.dcp"
+      code << "report_utilization -file $outputDir/post_place_util.rpt"
+      code << "report_timing_summary -file $outputDir/post_place_timing_summary.rpt"
+      code << "route_design"
+      code << "write_checkpoint -force $outputDir/post_route.dcp"
+      code << "report_route_status -file $outputDir/post_route_status.rpt"
+      code << "report_timing_summary -file $outputDir/post_route_timing_summary.rpt"
+      code << "report_power -file $outputDir/post_route_power.rpt"
+      code << "report_drc -file $outputDir/post_imp_drc.rpt"
+      code << "write_bitstream -force $outputDir/top.bit"
+      code << "exit"
+
+      FileUtils.mkdir_p syn_dir=@dest_dir+"/syn"
+      code.save_as syn_dir+"/script.tcl",verbose=false
+
+      FileUtils.cp "#{@reggae_dir}/../../assets/vivado/nexysa7.xdc", syn_dir
     end
 
     def save_as code,filename

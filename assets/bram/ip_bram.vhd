@@ -64,7 +64,7 @@ begin
           end if;
         end if;
       when SAMPLE_DATA =>
-        slave_to_bus_data <= bram_data_o;
+        slave_to_bus_data <= std_logic_vector(resize(unsigned(bram_data_o),32));
         state_c           <= IDLE;
       when others =>
         null;
