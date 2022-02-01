@@ -11,7 +11,6 @@ The memory map, specified by the user, is described in a s-expression based file
 A full example is provided in tests directory. A simple IP interface can be as simple as :
 
 ```
-  ...
   (ip "switches"
     (range 0x1 0x1)
     (reg "switches"
@@ -20,7 +19,6 @@ A full example is provided in tests directory. A simple IP interface can be as s
       (init 0xcafebabe)
     )
   )
-  ...
 ```
 Here we have simply asked Reggae to generate an IP named "switches", with a single register, also named "switches", that reset to default value 0xcafebabe. This register samples a signal named "sig_switches", that will be user-defined, probably connected to actual switches !
 
@@ -75,3 +73,7 @@ Reggae will then create the following architecture, as well as testbench and syn
 ## SoC architecture
 
 The SoC template is given as example below.
+
+<p align="center">
+  <img src="./doc/schematic.png" />
+</p>
